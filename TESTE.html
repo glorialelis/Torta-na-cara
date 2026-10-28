@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Torta na Cara | Quiz de Inglês — mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sky: #ffffff;
+    --scene: #f2bbd0;
+    --line: #9c5593;
+    --line-soft: rgba(156, 85, 147, .35);
+    --scene-soft: rgba(242, 187, 208, .45);
+    --ink: #3a2240;
+    --ok: #9c5593;
+    --radius: 18px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--sky);
+    color: var(--ink);
+    font-family: "Baloo 2", system-ui, sans-serif;
+    display: flex; flex-direction: column;
+  }
+
+  /* ---------- mockup toolbar (not part of the game) ---------- */
+  .mock-bar {
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    padding: 8px 16px; background: #faf3f7; border-bottom: 1px dashed var(--line-soft);
+    font-size: 14px;
+  }
+  .mock-bar b { color: var(--line); margin-right: 4px; }
+  .mock-bar button {
+    font: inherit; font-weight: 700; border: 2px solid var(--line); background: #fff; color: var(--line);
+    padding: 2px 12px; border-radius: 999px; cursor: pointer;
+  }
+  .mock-bar button[aria-pressed="true"] { background: var(--line); color: #fff; }
+  .mock-bar .sp { flex: 1; }
+
+  /* ---------- app frame: HUD / world / answers, never scrolls ---------- */
+  .app { flex: 1; min-height: 0; display: flex; justify-content: center; padding: 12px 16px 16px; }
+  .screen { display: none; width: 100%; max-width: 1100px; flex-direction: column; gap: 10px; min-height: 0; }
+  .screen.on { display: flex; }
+
+  .title {
+    font-family: "Bagel Fat One", "Baloo 2", sans-serif; line-height: .9; margin: 0; text-align: center;
+    color: var(--scene); -webkit-text-stroke: 3px var(--line); paint-order: stroke fill;
+    text-shadow: 0 6px 0 var(--line);
+    letter-spacing: 1px;
+  }
+  .subtitle {
+    text-align: center; color: var(--line); font-weight: 800; letter-spacing: 4px; text-transform: uppercase;
+    margin: 4px 0 0; font-size: 15px;
+  }
+
+  .btn {
+    font: inherit; font-weight: 800; font-size: 18px; cursor: pointer;
+    border: 3px solid var(--line); border-radius: 999px; padding: 10px 26px;
+    background: var(--scene); color: var(--ink); box-shadow: 0 5px 0 var(--line);
+    transition: transform .08s, box-shadow .08s;
+  }
+  .btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--line); }
+  .btn.ghost { background: #fff; }
+  .btn.dark { background: var(--line); color: #fff; box-shadow: 0 5px 0 var(--ink); border-color: var(--ink); }
+
+  /* ---------- HUD ---------- */
+  .hud { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: stretch; }
+  .player-card {
+    display: flex; align-items: center; gap: 10px; background: #fff;
+    border: 3px solid var(--line); border-radius: var(--radius); padding: 6px 12px 6px 6px;
+  }
+  .player-card.p2 { flex-direction: row-reverse; padding: 6px 6px 6px 12px; text-align: right; }
+  .avatar {
+    width: 52px; height: 52px; flex: none; border-radius: 50%; background: var(--scene);
+    border: 3px solid var(--line); overflow: hidden; display: grid; place-items: center;
+  }
+  .avatar img, .avatar svg { width: 120%; height: auto; }
+  .pinfo { flex: 1; min-width: 0; }
+  .pname { font-weight: 800; font-size: 16px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pname small { font-weight: 700; color: var(--line); font-size: 12px; }
+  .pts { font-family: "Bagel Fat One", sans-serif; font-size: 22px; color: var(--line); line-height: 1; }
+  .clean { display: flex; align-items: center; gap: 6px; margin-top: 3px; font-size: 12px; font-weight: 700; }
+  .p2 .clean { flex-direction: row-reverse; }
+  .bar { flex: 1; height: 10px; border-radius: 99px; background: var(--scene-soft); border: 2px solid var(--line); overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--line); border-radius: 99px; transition: width .4s; }
+  .p2 .bar i { margin-left: auto; }
+  .pies { display: flex; gap: 2px; }
+  .pies svg { width: 18px; height: 18px; }
+
+  .round {
+    background: var(--line); color: #fff; border-radius: var(--radius); padding: 6px 14px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 120px;
+  }
+  .round .n { font-family: "Bagel Fat One", sans-serif; font-size: 22px; line-height: 1; }
+  .round .lvl { font-size: 12px; font-weight: 800; background: #fff; color: var(--line); border-radius: 99px; padding: 0 8px; margin-top: 4px; }
+
+  /* ---------- world ---------- */
+  .world {
+    position: relative; flex: 1; min-height: 260px; border: 3px solid var(--line); border-radius: 24px;
+    overflow: hidden; background: var(--sky);
+  }
+  .world > svg.bg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .actor { position: absolute; bottom: 7%; width: 22%; max-width: 230px; }
+  .actor > img, .actor > svg:not(.splat) { width: 100%; height: auto; display: block; filter: drop-shadow(0 6px 0 rgba(156,85,147,.25)); }
+  .actor.p1 { left: 4%; }
+  .actor.p2 { right: 4%; }
+  .actor .tag {
+    position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+    background: #fff; border: 2px solid var(--line); border-radius: 99px; padding: 0 10px;
+    font-weight: 800; font-size: 13px; white-space: nowrap; color: var(--line);
+  }
+  .host { z-index: 0; position: absolute; left: 50%; bottom: 7%; width: 16%; max-width: 170px; transform: translateX(-50%); }
+  .host img { width: 100%; display: block; }
+  .host .stand {
+    position: relative; z-index: -1;
+    margin: -22px auto 0; width: 80%; height: 34px; background: var(--scene); border: 3px solid var(--line);
+    border-radius: 8px 8px 0 0; display: grid; place-items: center; font-weight: 800; color: var(--line); font-size: 13px;
+  }
+
+  .bubble {
+    position: absolute; left: 50%; top: 5%; transform: translateX(-50%); width: min(560px, 62%);
+    background: #fff; border: 3px solid var(--line); border-radius: 22px; padding: 12px 18px 10px;
+    box-shadow: 0 6px 0 var(--line-soft); text-align: center;
+  }
+  .bubble::after {
+    content: ""; position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%) rotate(45deg);
+    width: 24px; height: 24px; background: #fff; border-right: 3px solid var(--line); border-bottom: 3px solid var(--line);
+  }
+  .bubble .who { font-size: 12px; font-weight: 800; color: var(--line); letter-spacing: 1px; text-transform: uppercase; }
+  .bubble .q { font-size: clamp(17px, 2.3vw, 24px); font-weight: 800; line-height: 1.2; margin: 2px 0 8px; }
+  .bubble .q em { font-style: normal; background: var(--scene); border: 2px dashed var(--line); border-radius: 8px; padding: 0 6px; }
+  .timer { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 13px; color: var(--line); }
+  .timer .bar { height: 8px; }
+  .timer .bar i { animation: drain 15s linear forwards; }
+  @keyframes drain { from { width: 100% } to { width: 0 } }
+
+  .status-chip {
+    position: absolute; top: 40%; background: #fff; border: 2px solid var(--line); border-radius: 99px;
+    padding: 2px 10px; font-weight: 800; font-size: 13px; color: var(--line);
+  }
+  .status-chip.p1 { left: 5%; }
+  .status-chip.p2 { right: 5%; }
+
+  /* pie throw */
+  .pie-fly { position: absolute; left: 20%; bottom: 30%; width: 64px; opacity: 0; pointer-events: none; }
+  .pie-fly.go { animation: flyX .9s linear forwards; }
+  .pie-fly.go svg { animation: flyY .9s cubic-bezier(.3,0,.7,1) forwards, spin .9s linear; }
+  @keyframes flyX { 0% { opacity: 1; left: 20% } 100% { opacity: 1; left: 76% } }
+  @keyframes flyY { 0% { transform: translateY(0) } 50% { transform: translateY(-140%) } 100% { transform: translateY(10%) } }
+  @keyframes spin { to { rotate: 540deg } }
+  .splat { position: absolute; width: 70%; left: 12%; top: 8%; opacity: 0; transform: scale(.3); pointer-events: none; }
+  .splat.on { opacity: 1; transform: scale(1); transition: transform .18s cubic-bezier(.3,1.6,.5,1), opacity .1s; }
+  .shake { animation: shake .4s; }
+  @keyframes shake { 25% { transform: translateX(-8px) rotate(-3deg) } 75% { transform: translateX(8px) rotate(3deg) } }
+  .pow {
+    position: absolute; right: 18%; top: 30%; font-family: "Bagel Fat One", sans-serif; font-size: clamp(28px, 5vw, 54px);
+    color: #fff; -webkit-text-stroke: 3px var(--line); paint-order: stroke fill; transform: rotate(-10deg) scale(0); opacity: 0;
+  }
+  .pow.on { opacity: 1; transform: rotate(-10deg) scale(1); transition: transform .25s cubic-bezier(.3,1.8,.5,1); }
+
+  /* ---------- answers ---------- */
+  .answers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .ans {
+    font: inherit; cursor: pointer; display: flex; align-items: center; gap: 10px; text-align: left;
+    background: #fff; color: var(--ink); border: 3px solid var(--line); border-radius: var(--radius);
+    padding: 10px 14px; font-size: clamp(16px, 2vw, 21px); font-weight: 800; box-shadow: 0 5px 0 var(--line);
+    transition: transform .08s, box-shadow .08s, background .2s;
+  }
+  .ans:hover { background: var(--scene-soft); }
+  .ans:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--line); }
+  .ans .k {
+    flex: none; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center;
+    background: var(--scene); border: 2px solid var(--line); color: var(--line); font-family: "Bagel Fat One", sans-serif;
+  }
+  .ans.right { background: var(--line); color: #fff; }
+  .ans.right .k { background: #fff; }
+  .ans.wrong { opacity: .45; text-decoration: line-through; }
+  .hint { text-align: center; font-size: 13px; font-weight: 700; color: var(--line); }
+
+  /* ---------- start / lobby / result ---------- */
+  .center-card {
+    margin: auto; width: min(560px, 100%); background: #fff; border: 3px solid var(--line); border-radius: 26px;
+    padding: 20px; box-shadow: 0 8px 0 var(--line-soft); display: flex; flex-direction: column; gap: 14px; align-items: center;
+  }
+  .cast { display: flex; align-items: flex-end; justify-content: center; gap: 4px; width: 100%; }
+  .cast img, .cast svg { height: auto; }
+  .cast .c1 { width: 30%; } .cast .c2 { width: 28%; } .cast .c3 { width: 30%; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .code-in {
+    font: inherit; font-weight: 800; font-size: 18px; letter-spacing: 3px; text-transform: uppercase; text-align: center;
+    width: 170px; border: 3px solid var(--line); border-radius: 999px; padding: 8px 12px; color: var(--ink); background: var(--scene-soft);
+  }
+  .rules { font-size: 14px; line-height: 1.4; margin: 0; padding-left: 18px; color: var(--ink); align-self: stretch; }
+  .rules b { color: var(--line); }
+
+  .room-code {
+    font-family: "Bagel Fat One", sans-serif; font-size: 40px; letter-spacing: 4px; color: var(--line);
+    background: var(--scene-soft); border: 3px dashed var(--line); border-radius: 18px; padding: 2px 20px;
+  }
+  .slots { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
+  .slot { border: 3px solid var(--line); border-radius: 18px; padding: 10px; text-align: center; background: #fff; }
+  .slot .pic { height: 110px; display: flex; align-items: flex-end; justify-content: center; }
+  .slot .pic img, .slot .pic svg { max-height: 110px; width: auto; max-width: 100%; }
+  .slot .st { font-weight: 800; font-size: 13px; color: var(--line); }
+  .slot.wait { border-style: dashed; opacity: .75; }
+  .dots::after { content: ""; animation: dots 1.2s steps(4) infinite; }
+  @keyframes dots { 0% { content: "" } 25% { content: "." } 50% { content: ".." } 75% { content: "..." } }
+
+  .podium { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
+  .podium .slot { position: relative; }
+  .podium .winner { background: var(--scene-soft); }
+  .crown {
+    position: absolute; top: -16px; left: 50%; transform: translateX(-50%); background: var(--line); color: #fff;
+    border-radius: 99px; padding: 0 12px; font-weight: 800; font-size: 13px; white-space: nowrap;
+  }
+  .stats { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .stats td { padding: 3px 0; border-bottom: 1px dashed var(--line-soft); }
+  .stats td:last-child { text-align: right; font-weight: 800; }
+  .slot .face { position: relative; display: inline-block; }
+  .slot .face .splat { opacity: 1; transform: none; }
+
+  @media (max-width: 720px) {
+    .app { padding: 8px 10px 10px; }
+    .hud { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .player-card { min-width: 0; gap: 6px; }
+    .clean .pies, .clean > span:first-child { display: none; }
+    .pname { font-size: 14px; }
+    .round { grid-column: 1 / -1; grid-row: 1; flex-direction: row; gap: 10px; padding: 4px 12px; }
+    .round .lvl { margin: 0; }
+    .avatar { width: 40px; height: 40px; }
+    .pts { font-size: 18px; }
+    .pname small { display: none; }
+    .answers { grid-template-columns: 1fr; gap: 8px; }
+    .ans { padding: 7px 12px; }
+    .bubble { width: 90%; top: 4%; padding: 8px 12px; }
+    .actor { width: 32%; bottom: 4%; }
+    .host { width: 24%; bottom: 4%; }
+    .host .stand {
+    position: relative; z-index: -1; height: 22px; font-size: 10px; }
+    .status-chip { top: auto; bottom: 46%; font-size: 11px; }
+    .world { min-height: 300px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Mockup-only toolbar -->
+<div class="mock-bar" role="toolbar" aria-label="Telas do mockup">
+  <b>Mockup · telas:</b>
+  <button data-go="start">1. Início</button>
+  <button data-go="lobby">2. Sala</button>
+  <button data-go="duel" aria-pressed="true">3. Duelo</button>
+  <button data-go="result">4. Resultado</button>
+  <span class="sp"></span>
+  <button id="throw">🥧 Simular torta</button>
+</div>
+
+<!-- SVG defs reused by every screen -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="pie" viewBox="0 0 64 44">
+      <path d="M4 22 Q32 34 60 22 L54 38 Q32 46 10 38 Z" fill="#e8c08f" stroke="#9c5593" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M12 30 l2 7 M22 32 l1 8 M32 33 v8 M42 32 l-1 8 M52 30 l-2 7" stroke="#9c5593" stroke-width="2" stroke-linecap="round"/>
+      <path d="M4 22 Q6 8 20 9 Q24 3 32 6 Q40 2 45 9 Q59 8 60 22 Q32 32 4 22 Z" fill="#fff" stroke="#9c5593" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M14 17 q4 3 8 0 M38 15 q4 3 8 0" stroke="#f2bbd0" stroke-width="3" stroke-linecap="round" fill="none"/>
+      <circle cx="32" cy="7" r="5" fill="#f2bbd0" stroke="#9c5593" stroke-width="2.5"/>
+    </symbol>
+    <symbol id="splat" viewBox="0 0 120 100">
+      <path d="M60 8 Q72 22 84 10 Q86 28 108 24 Q96 40 114 52 Q94 56 102 76 Q82 70 78 92 Q66 76 52 94 Q48 74 26 84 Q32 64 8 60 Q26 48 10 32 Q32 34 30 14 Q46 26 60 8 Z"
+        fill="#fff" stroke="#9c5593" stroke-width="3.5" stroke-linejoin="round"/>
+      <circle cx="58" cy="50" r="9" fill="#f2bbd0" stroke="#9c5593" stroke-width="3"/>
+      <circle cx="42" cy="38" r="4" fill="#f2bbd0"/><circle cx="76" cy="62" r="5" fill="#f2bbd0"/>
+      <path d="M44 88 q2 10 -2 12 M80 88 q-1 8 3 10" stroke="#9c5593" stroke-width="3" fill="none" stroke-linecap="round"/>
+    </symbol>
+    <!-- Player 2: Gatinha Branquinha (drawn in SVG, no PNG supplied) -->
+    <symbol id="cat-white" viewBox="0 0 200 190">
+      <g stroke="#3a2240" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M150 150 Q195 140 182 96 Q176 80 168 92 Q178 128 140 132" fill="#fff"/>
+        <path d="M48 178 Q40 112 70 98 L130 98 Q162 112 154 178 Z" fill="#fff"/>
+        <path d="M70 178 q4 -18 18 -18 q14 0 14 18 M104 178 q2 -18 16 -18 q14 0 14 18" fill="#fff"/>
+        <path d="M52 52 L46 10 L80 32 Q100 26 120 32 L154 10 L148 52 Q158 92 100 102 Q42 92 52 52 Z" fill="#fff"/>
+        <path d="M56 40 L54 22 L70 33 M144 40 L146 22 L130 33" fill="#f2bbd0" stroke-width="2.5"/>
+        <path d="M74 62 q6 -7 12 0 M114 62 q6 -7 12 0" fill="none"/>
+        <path d="M94 74 l6 5 l6 -5 Z" fill="#f2bbd0" stroke-width="2.5"/>
+        <path d="M100 79 q-6 8 -12 4 M100 79 q6 8 12 4" fill="none" stroke-width="3"/>
+        <path d="M36 70 l28 4 M38 82 l26 -2 M164 70 l-28 4 M162 82 l-26 -2" stroke-width="2"/>
+      </g>
+      <ellipse cx="70" cy="80" rx="9" ry="5" fill="#f2bbd0"/>
+      <ellipse cx="130" cy="80" rx="9" ry="5" fill="#f2bbd0"/>
+      <path d="M118 18 q10 -14 22 -4 q-6 12 -22 4 Z M118 18 q-6 -16 -20 -10 q2 14 20 10 Z" fill="#9c5593" stroke="#3a2240" stroke-width="3"/>
+      <circle cx="118" cy="18" r="5" fill="#f2bbd0" stroke="#3a2240" stroke-width="3"/>
+    </symbol>
+  </defs>
+</svg>
+
+<main class="app">
+
+  <!-- 1. INÍCIO -->
+  <section class="screen" id="start">
+    <div class="center-card">
+      <div>
+        <h1 class="title" style="font-size: clamp(44px, 9vw, 72px)">Torta<br>na Cara</h1>
+        <p class="subtitle">Quiz de Inglês</p>
+      </div>
+      <div class="cast">
+        <img class="c1" src="img/gatinha-cafe.png" alt="Gatinha Café Tubarão">
+        <img class="c2" src="img/tubarao.png" alt="Tubarão Rosa, a entrevistadora">
+        <svg class="c3" viewBox="0 0 200 190" style="transform: scaleX(-1)" aria-label="Gatinha Branquinha"><use href="#cat-white"/></svg>
+      </div>
+      <ul class="rules">
+        <li>A <b>Tubarão Rosa</b> faz a pergunta para as duas ao mesmo tempo.</li>
+        <li>Quem acertar <b>primeiro</b> arremessa uma torta na outra. 🥧</li>
+        <li>Vence quem terminar <b>com mais pontos</b> e <b>mais limpinha</b>.</li>
+      </ul>
+      <div class="row">
+        <button class="btn dark" data-go="lobby">Criar sala</button>
+      </div>
+      <div class="row" style="align-items:center">
+        <input class="code-in" placeholder="CÓDIGO" maxlength="6" aria-label="Código da sala">
+        <button class="btn ghost" data-go="lobby">Entrar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. SALA -->
+  <section class="screen" id="lobby">
+    <div class="center-card">
+      <p class="subtitle" style="margin:0">Sala de duelo</p>
+      <div class="room-code">TRT482</div>
+      <p style="margin:-6px 0 0; font-size:14px; text-align:center">Mande o código (ou o link) para a sua adversária.</p>
+      <div class="slots">
+        <div class="slot">
+          <div class="pic"><img src="img/gatinha-cafe.png" alt=""></div>
+          <div style="font-weight:800">Gatinha Café</div>
+          <div class="st">Jogadora 1 · pronta ✓</div>
+        </div>
+        <div class="slot wait">
+          <div class="pic"><svg viewBox="0 0 200 190" style="height:110px;transform:scaleX(-1)"><use href="#cat-white"/></svg></div>
+          <div style="font-weight:800">Gatinha Branquinha</div>
+          <div class="st">Esperando entrar<span class="dots"></span></div>
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn ghost">Copiar link</button>
+        <button class="btn dark" data-go="duel">Começar duelo</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. DUELO -->
+  <section class="screen on" id="duel">
+    <header class="hud">
+      <div class="player-card p1">
+        <div class="avatar"><img src="img/gatinha-cafe.png" alt=""></div>
+        <div class="pinfo">
+          <div class="pname">Gatinha Café <small>· você</small></div>
+          <div class="pts" id="p1pts">120 pts</div>
+          <div class="clean"><span>Limpeza</span><div class="bar"><i style="width:80%"></i></div>
+            <span class="pies"><svg><use href="#pie"/></svg></span></div>
+        </div>
+      </div>
+      <div class="round">
+        <span style="font-size:12px;font-weight:800">PERGUNTA</span>
+        <span class="n">7 / 15</span>
+        <span class="lvl">🟡 Médio</span>
+      </div>
+      <div class="player-card p2">
+        <div class="avatar"><svg viewBox="20 0 160 120" style="transform:scaleX(-1)"><use href="#cat-white"/></svg></div>
+        <div class="pinfo">
+          <div class="pname">Gatinha Branquinha</div>
+          <div class="pts" id="p2pts">90 pts</div>
+          <div class="clean"><span>Limpeza</span><div class="bar"><i id="p2clean" style="width:60%"></i></div>
+            <span class="pies" id="p2pies"><svg><use href="#pie"/></svg><svg><use href="#pie"/></svg></span></div>
+        </div>
+      </div>
+    </header>
+
+    <div class="world" id="world">
+      <svg class="bg" viewBox="0 0 1000 560" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+        <!-- clouds -->
+        <g fill="#fff" stroke="#f2bbd0" stroke-width="4">
+          <path d="M60 120 q0 -34 38 -30 q12 -30 50 -18 q30 -12 44 18 q34 0 30 30 Z"/>
+          <path d="M760 90 q0 -30 34 -28 q14 -26 46 -14 q30 -10 40 16 q30 2 26 26 Z"/>
+        </g>
+        <!-- far skyline -->
+        <g fill="#f2bbd0" fill-opacity=".45" stroke="#9c5593" stroke-opacity=".3" stroke-width="3">
+          <path d="M0 400 V250 h70 v-40 h60 v190 Z"/>
+          <path d="M150 400 V200 h90 v200 Z"/>
+          <path d="M700 400 V220 h80 v-30 h50 v210 Z"/>
+          <path d="M850 400 V260 h150 V400 Z"/>
+          <path d="M360 400 V230 h80 v170 Z M560 400 V210 h90 v190 Z"/>
+        </g>
+        <!-- near buildings -->
+        <g stroke="#9c5593" stroke-width="4" stroke-linejoin="round">
+          <!-- pie shop, left -->
+          <path d="M20 470 V300 h230 V470 Z" fill="#f2bbd0"/>
+          <path d="M10 300 l20 -40 h210 l20 40 Z" fill="#fff"/>
+          <rect x="60" y="270" width="130" height="28" rx="8" fill="#9c5593"/>
+          <text x="125" y="291" font-family="Bagel Fat One, sans-serif" font-size="22" fill="#fff" stroke="none" text-anchor="middle">TORTAS</text>
+          <path d="M20 330 h230 l-14 22 h-28 l-14 -22 l-14 22 h-28 l-14 -22 l-14 22 h-28 l-14 -22 l-14 22 h-28 l-14 -22 Z" fill="#fff"/>
+          <rect x="44" y="370" width="80" height="60" rx="6" fill="#fff"/>
+          <rect x="150" y="372" width="70" height="98" rx="6" fill="#fff"/>
+          <!-- right building with stairs -->
+          <path d="M740 470 V280 h240 V470 Z" fill="#f2bbd0"/>
+          <path d="M730 280 h260 v-24 h-260 Z" fill="#fff"/>
+          <rect x="770" y="310" width="60" height="50" rx="6" fill="#fff"/>
+          <rect x="880" y="310" width="60" height="50" rx="6" fill="#fff"/>
+          <path d="M700 470 L860 380 h120 M720 470 L870 388" fill="none"/>
+          <path d="M760 446 v24 M800 424 v46 M840 400 v70" fill="none" stroke-width="3"/>
+        </g>
+        <!-- utility poles + wires -->
+        <g stroke="#9c5593" stroke-width="5" stroke-linecap="round" fill="none">
+          <path d="M300 470 V230 M280 250 h40 M285 268 h30"/>
+          <path d="M690 470 V220 M670 240 h40 M675 258 h30"/>
+          <path d="M0 260 Q150 300 280 250 M320 250 Q500 300 670 240 M710 240 Q860 290 1000 250" stroke-width="2.5"/>
+        </g>
+        <!-- street sign -->
+        <g stroke="#9c5593" stroke-width="4">
+          <path d="M640 470 V390" />
+          <circle cx="640" cy="380" r="18" fill="#fff"/>
+          <path d="M630 380 h20" stroke-width="5"/>
+        </g>
+        <!-- ground -->
+        <path d="M0 470 H1000 V560 H0 Z" fill="#f2bbd0" stroke="#9c5593" stroke-width="4"/>
+        <path d="M0 500 H1000" stroke="#9c5593" stroke-width="2" stroke-dasharray="30 22" opacity=".5"/>
+        <g fill="#fff" stroke="#9c5593" stroke-width="3">
+          <path d="M330 470 q20 -30 40 0 Z M600 470 q16 -24 32 0 Z"/>
+        </g>
+      </svg>
+
+      <div class="bubble">
+        <div class="who">Tubarão Rosa pergunta</div>
+        <div class="q">"Yesterday, we <em>(assistimos)</em> a great movie at the cinema."</div>
+        <div class="timer">⏱ 12 s <div class="bar"><i></i></div></div>
+      </div>
+
+      <div class="host">
+        <img src="img/tubarao.png" alt="Tubarão Rosa, a entrevistadora">
+      </div>
+
+      <div class="actor p1" id="actorP1">
+        <span class="tag">Você</span>
+        <img src="img/gatinha-cafe.png" alt="Gatinha Café Tubarão">
+      </div>
+      <div class="actor p2" id="actorP2">
+        <span class="tag">Adversária</span>
+        <svg viewBox="0 0 200 190" style="transform: scaleX(-1)" aria-label="Gatinha Branquinha"><use href="#cat-white"/></svg>
+        <svg class="splat" id="hitSplat" viewBox="0 0 120 100"><use href="#splat"/></svg>
+      </div>
+
+      <span class="status-chip p2" id="oppChip">Pensando<span class="dots"></span></span>
+
+      <div class="pie-fly" id="pieFly"><svg viewBox="0 0 64 44"><use href="#pie"/></svg></div>
+      <div class="pow" id="pow">SPLAT!</div>
+    </div>
+
+    <div class="answers" id="answers">
+      <button class="ans" data-ok="0"><span class="k">A</span>watch</button>
+      <button class="ans" data-ok="1"><span class="k">B</span>watched</button>
+      <button class="ans" data-ok="0"><span class="k">C</span>watching</button>
+    </div>
+    <div class="hint">Toque na resposta ou use as teclas 1–3 / A–C · Errou? As respostas travam por 3 s.</div>
+  </section>
+
+  <!-- 4. RESULTADO -->
+  <section class="screen" id="result">
+    <div class="center-card">
+      <p class="subtitle" style="margin:0">Fim do duelo</p>
+      <h2 class="title" style="font-size: clamp(30px, 6vw, 46px)">A mais limpinha<br>venceu!</h2>
+      <div class="podium">
+        <div class="slot winner">
+          <span class="crown">👑 Vencedora</span>
+          <div class="pic"><span class="face"><img src="img/gatinha-cafe.png" alt="" style="max-height:110px"></span></div>
+          <div style="font-weight:800">Gatinha Café</div>
+          <table class="stats">
+            <tr><td>Pontos</td><td>240</td></tr>
+            <tr><td>Acertos</td><td>11 / 15</td></tr>
+            <tr><td>Tortas recebidas</td><td>3</td></tr>
+            <tr><td>Tempo médio</td><td>3,8 s</td></tr>
+          </table>
+        </div>
+        <div class="slot">
+          <div class="pic"><span class="face">
+            <svg viewBox="0 0 200 190" style="height:110px;transform:scaleX(-1)"><use href="#cat-white"/></svg>
+            <svg class="splat" viewBox="0 0 120 100" style="width:60%;left:22%;top:4%"><use href="#splat"/></svg>
+          </span></div>
+          <div style="font-weight:800">Gatinha Branquinha</div>
+          <table class="stats">
+            <tr><td>Pontos</td><td>150</td></tr>
+            <tr><td>Acertos</td><td>8 / 15</td></tr>
+            <tr><td>Tortas recebidas</td><td>8</td></tr>
+            <tr><td>Tempo médio</td><td>5,1 s</td></tr>
+          </table>
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn ghost">Ver erros</button>
+        <button class="btn ghost">Relatório PDF</button>
+        <button class="btn dark" data-go="lobby">Revanche</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+  // Mockup-only: switch screens and preview the pie throw.
+  const screens = document.querySelectorAll(".screen");
+  const tabs = document.querySelectorAll(".mock-bar [data-go]");
+  function go(id) {
+    screens.forEach(s => s.classList.toggle("on", s.id === id));
+    tabs.forEach(t => t.setAttribute("aria-pressed", String(t.dataset.go === id)));
+  }
+  document.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => go(b.dataset.go)));
+
+  const $ = id => document.getElementById(id);
+  let busy = false;
+  function throwPie() {
+    if (busy) return; busy = true;
+    go("duel");
+    const fly = $("pieFly"), splat = $("hitSplat"), pow = $("pow"), p2 = $("actorP2");
+    [splat, pow].forEach(e => e.classList.remove("on"));
+    fly.classList.remove("go"); void fly.offsetWidth; fly.classList.add("go");
+    setTimeout(() => {
+      fly.classList.remove("go"); fly.style.opacity = 0;
+      splat.classList.add("on"); pow.classList.add("on");
+      p2.classList.remove("shake"); void p2.offsetWidth; p2.classList.add("shake");
+      $("p2clean").style.width = "40%";
+      $("p2pies").insertAdjacentHTML("beforeend", '<svg><use href="#pie"/></svg>');
+      $("p1pts").textContent = "142 pts";
+      $("oppChip").textContent = "Levou torta!";
+    }, 880);
+    setTimeout(() => { pow.classList.remove("on"); busy = false; }, 1900);
+  }
+  $("throw").addEventListener("click", throwPie);
+  $("answers").addEventListener("click", e => {
+    const b = e.target.closest(".ans"); if (!b) return;
+    if (b.dataset.ok === "1") { b.classList.add("right"); throwPie(); }
+    else b.classList.add("wrong");
+  });
+</script>
+</body>
+</html>
